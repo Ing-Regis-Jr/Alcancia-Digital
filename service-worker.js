@@ -1,4 +1,4 @@
-const CACHE_NAME = "alcancia-v1";
+const CACHE_NAME = "alcancia-v2";
 
 const FILES = [
     "./",
