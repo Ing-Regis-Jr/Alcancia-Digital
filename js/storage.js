@@ -2,7 +2,7 @@
 /* CONSTANTES */
 /* ================================= */
 
-const STORAGE_KEY = "alcanciaMama";
+const STORAGE_KEY = "alcanciaDigital";
 
 /* ================================= */
 /* FECHAS */
