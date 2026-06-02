@@ -26,7 +26,7 @@
 
         <div class="card login-card">
 
-            <h1>❤️ Alcancía Digital</h1>
+            <h1> Alcancía Digital</h1>
 
             <p id="authMessage"></p>
 
@@ -62,15 +62,30 @@
 
             <h3 id="setupMonth"></h3>
 
+            <p class="hint">
+                Agrega metas (ej: Mamá, Viaje). El monto diario es el <strong>total entre todas las personas</strong> (ej: hermana 3 + tú 4 = 7 Bs/día).
+            </p>
+
+            <input
+                type="text"
+                id="setupGoalName"
+                placeholder="Nombre de la meta">
+
             <input
                 type="number"
-                id="dailyAmount"
+                id="setupGoalDaily"
                 min="1"
-                placeholder="Ahorro diario (Bs)">
+                placeholder="Ahorro diario de esta meta (Bs)">
+
+            <button type="button" id="addSetupGoalBtn" class="secondary-btn">
+                + Agregar meta
+            </button>
+
+            <div id="setupGoalsList" class="goals-list"></div>
 
             <div class="preview-box">
 
-                <p>Meta calculada ❤️</p>
+                <p>Meta total del mes ❤️</p>
 
                 <h2 id="monthlyGoal">
                     0 Bs
@@ -101,7 +116,7 @@
             </h2>
 
             <p>
-                ❤️ Ahorrar es ganar
+            Ahorrar es ganar
             </p>
 
         </header>
@@ -162,13 +177,50 @@
 
                 <div class="days-card">
 
-                    <h3>Días cubiertos</h3>
+                    <h3>Días cubiertos (todas las metas)</h3>
 
                     <p id="coveredDays">
                         0 / 30
                     </p>
 
                 </div>
+
+                <div id="goalsDashboard" class="goals-dashboard">
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- METAS -->
+
+        <section id="goalsView" class="view hidden">
+
+            <div class="card">
+
+                <h2>🎯 Metas del mes</h2>
+
+                <p class="hint">
+                    El monto diario es la suma de todos (ej: 3 + 4 = 7). Los aportes se acumulan hasta completar un día en el calendario.
+                </p>
+
+                <input
+                    type="text"
+                    id="goalName"
+                    placeholder="Nombre (ej: Mamá)">
+
+                <input
+                    type="number"
+                    id="goalDaily"
+                    min="1"
+                    placeholder="Monto diario (Bs)">
+
+                <button id="addGoalBtn">
+                    Agregar meta
+                </button>
+
+                <div id="goalsList" class="goals-list"></div>
 
             </div>
 
@@ -215,15 +267,19 @@
 
                 </select>
 
+                <select id="goalSelect">
+
+                </select>
+
                 <input
                     type="number"
                     id="amountInput"
                     min="1"
                     placeholder="Monto (Bs)">
 
-                <textarea
-                    id="commentInput"
-                    placeholder="Comentario"></textarea>
+                <p id="daysPreview" class="days-preview hidden">
+                    Este aporte marcará <strong>0</strong> días en el calendario
+                </p>
 
                 <button id="saveContributionBtn">
                     Guardar aporte
@@ -272,6 +328,14 @@
             </button>
 
             <button class="nav-btn"
+                data-view="goalsView">
+
+                🎯
+                <span>Metas</span>
+
+            </button>
+
+            <button class="nav-btn"
                 data-view="peopleView">
 
                 👥
@@ -309,12 +373,17 @@
 
             <h2>✏️ Editar aporte</h2>
 
+            <select id="editGoalSelect">
+
+            </select>
+
             <input
                 type="number"
                 id="editAmount">
 
-            <textarea
-                id="editComment"></textarea>
+            <p id="editDaysPreview" class="days-preview hidden">
+                Marcará <strong>0</strong> días
+            </p>
 
             <div class="modal-buttons">
 
@@ -338,6 +407,7 @@
 
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/metas.js"></script>
     <script src="js/personas.js"></script>
     <script src="js/aportes.js"></script>
     <script src="js/app.js"></script>
@@ -352,8 +422,12 @@ if ('serviceWorker' in navigator) {
 }
 
 </script>
-<footer class="watermark">
-    © By Regis_Salvador
+<footer class="watermark" aria-hidden="true">
+                
+    <span class="watermark-icon"> 💰 </span>
+    <span class="watermark-brand">Alcancía Digital</span>
+    <span class="watermark-divider">·</span>
+    <span class="watermark-credit">by Regis_Salvador</span>
 </footer>
 </body>
 

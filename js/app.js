@@ -48,19 +48,54 @@ navButtons.forEach(btn => {
                 "active"
             );
 
+            if (
+                targetView ===
+                "historyView" &&
+                typeof renderHistory ===
+                "function"
+            ) {
+                renderHistory();
+            }
+
         }
     );
 
 });
 
 /* ================================= */
+/* TRAS CAMBIOS EN APORTES */
+/* ================================= */
+
+function refreshAfterContributionChange() {
+
+    if (
+        typeof loadDashboard ===
+        "function"
+    ) {
+        loadDashboard();
+    }
+
+    if (
+        typeof renderGoals ===
+        "function"
+    ) {
+        renderGoals();
+    }
+
+    if (
+        typeof renderHistory ===
+        "function"
+    ) {
+        renderHistory();
+    }
+
+}
+
+/* ================================= */
 /* DASHBOARD */
 /* ================================= */
 
 function loadDashboard() {
-
-    const month =
-        getCurrentMonthData();
 
     const totalSaved =
         getTotalSaved();
@@ -73,6 +108,11 @@ function loadDashboard() {
 
     const percent =
         getProgressPercent();
+
+    const daysInMonth =
+        getDaysInCurrentMonth();
+
+    const goals = getGoals();
 
     document
         .getElementById(
@@ -88,19 +128,24 @@ function loadDashboard() {
         .textContent =
         `${totalSaved} Bs`;
 
+    const dailySummary =
+        goals.length === 1
+            ? `${goals[0].dailyAmount} Bs`
+            : `${goals.length} metas`;
+
     document
         .getElementById(
             "dailyValue"
         )
         .textContent =
-        `${month.dailyAmount} Bs`;
+        dailySummary;
 
     document
         .getElementById(
             "coveredDays"
         )
         .textContent =
-        `${coveredDays} / ${getDaysInCurrentMonth()}`;
+        `${coveredDays} días marcados`;
 
     document
         .getElementById(
@@ -115,6 +160,126 @@ function loadDashboard() {
         )
         .style.width =
         `${percent}%`;
+
+    renderGoalsDashboard(
+        goals,
+        daysInMonth
+    );
+
+}
+
+function renderGoalsDashboard(
+    goals,
+    daysInMonth
+) {
+
+    const container =
+        document.getElementById(
+            "goalsDashboard"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    if (goals.length === 0) {
+        return;
+    }
+
+    goals.forEach(goal => {
+
+        const saved =
+            getTotalSavedForGoal(
+                goal.id
+            );
+
+        const target =
+            goal.dailyAmount *
+            daysInMonth;
+
+        const percent =
+            getProgressPercentForGoal(
+                goal.id
+            );
+
+        const covered =
+            goal.coveredDays || [];
+
+        const section =
+            document.createElement(
+                "div"
+            );
+
+        section.className =
+            "goal-dashboard-card";
+
+        section.innerHTML = `
+            <h3>🎯 ${goal.name}</h3>
+            <p>${goal.dailyAmount} Bs/día · ${saved} / ${target} Bs (${percent.toFixed(0)}%)</p>
+            <p class="goal-days-count">${covered.length} / ${daysInMonth} días</p>
+            <div class="calendar-grid" data-goal-id="${goal.id}"></div>
+        `;
+
+        container.appendChild(
+            section
+        );
+
+        const grid =
+            section.querySelector(
+                ".calendar-grid"
+            );
+
+        renderCalendarGrid(
+            grid,
+            daysInMonth,
+            covered
+        );
+
+    });
+
+}
+
+function renderCalendarGrid(
+    container,
+    daysInMonth,
+    coveredDays
+) {
+
+    container.innerHTML = "";
+
+    for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+    ) {
+
+        const cell =
+            document.createElement(
+                "div"
+            );
+
+        cell.className =
+            "calendar-day";
+
+        if (
+            coveredDays.includes(
+                day
+            )
+        ) {
+            cell.classList.add(
+                "covered"
+            );
+        }
+
+        cell.textContent = day;
+
+        container.appendChild(
+            cell
+        );
+
+    }
 
 }
 
@@ -152,6 +317,8 @@ function renderHistory() {
     months.forEach(
         ([monthKey, data]) => {
 
+            migrateMonth(data);
+
             const total =
                 data.contributions
                 .reduce(
@@ -161,11 +328,29 @@ function renderHistory() {
                     0
                 );
 
-            const goal =
-                data.dailyAmount *
+            const days =
                 getDaysInMonthKey(
                     monthKey
                 );
+
+            const goalTotal =
+                (data.goals || [])
+                .reduce(
+                    (sum, g) =>
+                        sum +
+                        g.dailyAmount *
+                        days,
+                    0
+                );
+
+            const legacyGoal =
+                data.dailyAmount *
+                days;
+
+            const goal =
+                goalTotal > 0
+                    ? goalTotal
+                    : legacyGoal;
 
             const percent =
                 goal > 0
@@ -174,6 +359,14 @@ function renderHistory() {
                         goal
                     ) * 100
                     : 0;
+
+            const goalsText =
+                (data.goals || [])
+                .map(
+                    g => g.name
+                )
+                .join(", ") ||
+                "—";
 
             const div =
                 document.createElement(
@@ -189,7 +382,12 @@ function renderHistory() {
                 </h3>
 
                 <p>
-                    Meta:
+                    Metas:
+                    ${goalsText}
+                </p>
+
+                <p>
+                    Meta total:
                     ${goal} Bs
                 </p>
 
@@ -244,6 +442,20 @@ function getDaysInMonthKey(
 function refreshAll() {
 
     loadDashboard();
+
+    if (
+        typeof renderGoals ===
+        "function"
+    ) {
+        renderGoals();
+    }
+
+    if (
+        typeof refreshGoalSelects ===
+        "function"
+    ) {
+        refreshGoalSelects();
+    }
 
     renderPeople();
 

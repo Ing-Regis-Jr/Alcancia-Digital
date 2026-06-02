@@ -164,6 +164,13 @@ function renderPeople() {
 
                 renderPeople();
 
+                if (
+                    typeof refreshGoalSelects ===
+                    "function"
+                ) {
+                    refreshGoalSelects();
+                }
+
             }
         );
 

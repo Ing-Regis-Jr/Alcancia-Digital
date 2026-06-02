@@ -30,12 +30,6 @@ const btnAuth =
 const setupMonth =
     document.getElementById("setupMonth");
 
-const dailyAmountInput =
-    document.getElementById("dailyAmount");
-
-const monthlyGoalLabel =
-    document.getElementById("monthlyGoal");
-
 const saveMonthBtn =
     document.getElementById("saveMonthBtn");
 
@@ -164,30 +158,19 @@ function openSetup() {
     setupMonth.textContent =
         getMonthName();
 
-}
+    if (
+        typeof resetPendingSetupGoals ===
+        "function"
+    ) {
+        resetPendingSetupGoals();
+    }
 
-/* ================================= */
-/* PREVIEW META */
-/* ================================= */
-
-dailyAmountInput.addEventListener(
-    "input",
-    updateGoalPreview
-);
-
-function updateGoalPreview() {
-
-    const amount =
-        Number(
-            dailyAmountInput.value
-        ) || 0;
-
-    const goal =
-        amount *
-        getDaysInCurrentMonth();
-
-    monthlyGoalLabel.textContent =
-        `${goal} Bs`;
+    if (
+        typeof renderPendingSetupGoals ===
+        "function"
+    ) {
+        renderPendingSetupGoals();
+    }
 
 }
 
@@ -202,23 +185,31 @@ saveMonthBtn.addEventListener(
 
 function saveMonthConfiguration() {
 
-    const amount =
-        Number(
-            dailyAmountInput.value
-        );
+    if (
+        typeof pendingSetupGoals !==
+        "undefined" &&
+        pendingSetupGoals.length > 0
+    ) {
 
-    if (amount <= 0) {
+        savePendingGoalsToMonth();
 
-        alert(
-            "Ingresa un monto válido"
-        );
+        enterApplication();
 
         return;
+
     }
 
-    setDailyAmount(amount);
+    if (monthHasGoals()) {
 
-    enterApplication();
+        enterApplication();
+
+        return;
+
+    }
+
+    alert(
+        "Agrega al menos una meta con monto diario"
+    );
 
 }
 
@@ -233,12 +224,7 @@ function enterApplication() {
     const month =
         getCurrentMonthData();
 
-    /* Si el mes existe pero no tiene ahorro diario */
-
-    if (
-        !month.dailyAmount ||
-        month.dailyAmount <= 0
-    ) {
+    if (!monthHasGoals()) {
 
         openSetup();
         return;
@@ -261,14 +247,25 @@ function enterApplication() {
         .textContent =
         month.monthName;
 
-    /* Estas funciones existirán
-       en app.js */
-
     if (
         typeof loadDashboard ===
         "function"
     ) {
         loadDashboard();
+    }
+
+    if (
+        typeof renderGoals ===
+        "function"
+    ) {
+        renderGoals();
+    }
+
+    if (
+        typeof refreshGoalSelects ===
+        "function"
+    ) {
+        refreshGoalSelects();
     }
 
     if (

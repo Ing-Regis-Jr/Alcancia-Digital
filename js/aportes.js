@@ -5,8 +5,11 @@
 const amountInput =
     document.getElementById("amountInput");
 
-const commentInput =
-    document.getElementById("commentInput");
+const goalSelect =
+    document.getElementById("goalSelect");
+
+const daysPreview =
+    document.getElementById("daysPreview");
 
 const saveContributionBtn =
     document.getElementById("saveContributionBtn");
@@ -20,8 +23,11 @@ const editModal =
 const editAmount =
     document.getElementById("editAmount");
 
-const editComment =
-    document.getElementById("editComment");
+const editGoalSelect =
+    document.getElementById("editGoalSelect");
+
+const editDaysPreview =
+    document.getElementById("editDaysPreview");
 
 const updateContributionBtn =
     document.getElementById("updateContributionBtn");
@@ -54,6 +60,134 @@ cancelEditBtn.addEventListener(
     closeEditModal
 );
 
+amountInput.addEventListener(
+    "input",
+    updateDaysPreview
+);
+
+goalSelect.addEventListener(
+    "change",
+    updateDaysPreview
+);
+
+editAmount.addEventListener(
+    "input",
+    updateEditDaysPreview
+);
+
+editGoalSelect.addEventListener(
+    "change",
+    updateEditDaysPreview
+);
+
+/* ================================= */
+/* VISTA PREVIA DÍAS */
+/* ================================= */
+
+function updateDaysPreview() {
+
+    const amount =
+        Number(amountInput.value);
+
+    const goalId =
+        goalSelect.value;
+
+    if (
+        amount <= 0 ||
+        !goalId
+    ) {
+
+        daysPreview.classList.add(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+    const days =
+        getDaysMarkedForAmount(
+            amount,
+            goalId
+        );
+
+    daysPreview.classList.remove(
+        "hidden"
+    );
+
+    if (days > 0) {
+
+        daysPreview.innerHTML =
+            `Este aporte marcará <strong>${days}</strong> día${days !== 1 ? "s" : ""} (se suma con aportes de otras personas)`;
+
+        return;
+
+    }
+
+    const pending =
+        getPendingForNextDay(
+            goalId,
+            amount
+        );
+
+    daysPreview.innerHTML =
+        `Suma al día de la meta. Faltan <strong>${pending} Bs</strong> entre todos para marcar el siguiente día`;
+
+}
+
+function updateEditDaysPreview() {
+
+    const amount =
+        Number(editAmount.value);
+
+    const goalId =
+        editGoalSelect.value;
+
+    if (
+        amount <= 0 ||
+        !goalId
+    ) {
+
+        editDaysPreview.classList.add(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+    const days =
+        getDaysMarkedForAmount(
+            amount,
+            goalId,
+            editingContributionId
+        );
+
+    editDaysPreview.classList.remove(
+        "hidden"
+    );
+
+    if (days > 0) {
+
+        editDaysPreview.innerHTML =
+            `Marcará <strong>${days}</strong> día${days !== 1 ? "s" : ""} (sumando con otros aportes)`;
+
+        return;
+
+    }
+
+    const pending =
+        getPendingForNextDay(
+            goalId,
+            amount,
+            editingContributionId
+        );
+
+    editDaysPreview.innerHTML =
+        `Suma a la meta. Faltan <strong>${pending} Bs</strong> para el siguiente día`;
+
+}
+
 /* ================================= */
 /* GUARDAR APORTE */
 /* ================================= */
@@ -72,6 +206,21 @@ function saveContribution() {
 
         alert(
             "Selecciona una persona"
+        );
+
+        return;
+    }
+
+    const goalId =
+        Number(goalSelect.value);
+
+    const goal =
+        getGoalById(goalId);
+
+    if (!goal) {
+
+        alert(
+            "Selecciona una meta"
         );
 
         return;
@@ -97,23 +246,27 @@ function saveContribution() {
         personName:
             person.name,
 
-        amount,
+        goalId:
+            goal.id,
 
-        comment:
-            commentInput.value.trim()
+        amount
 
     });
 
     amountInput.value = "";
-    commentInput.value = "";
+    goalSelect.value = "";
+
+    daysPreview.classList.add(
+        "hidden"
+    );
 
     renderContributions();
 
     if (
-        typeof loadDashboard ===
+        typeof refreshAfterContributionChange ===
         "function"
     ) {
-        loadDashboard();
+        refreshAfterContributionChange();
     }
 
 }
@@ -146,6 +299,9 @@ function renderContributions() {
     }
 
     contributions.forEach(item => {
+
+        const days =
+            item.daysMarked || 0;
 
         const div =
             document.createElement(
@@ -184,10 +340,13 @@ function renderContributions() {
                 <strong>
                     ${item.amount} Bs
                 </strong>
+                · 🎯 ${item.goalName || "Sin meta"}
             </p>
 
-            <p>
-                ${item.comment || "-"}
+            <p class="days-badge">
+                ${days > 0
+                    ? `✅ ${days} día${days !== 1 ? "s" : ""} marcado${days !== 1 ? "s" : ""} por este aporte`
+                    : "➕ Suma al día de la meta (con otros aportes)"}
             </p>
 
             <small>
@@ -268,10 +427,10 @@ function attachContributionEvents() {
                     renderContributions();
 
                     if (
-                        typeof loadDashboard ===
+                        typeof refreshAfterContributionChange ===
                         "function"
                     ) {
-                        loadDashboard();
+                        refreshAfterContributionChange();
                     }
 
                 }
@@ -303,8 +462,17 @@ function openEditModal(id) {
     editAmount.value =
         contribution.amount;
 
-    editComment.value =
-        contribution.comment;
+    if (
+        typeof refreshGoalSelects ===
+        "function"
+    ) {
+        refreshGoalSelects();
+    }
+
+    editGoalSelect.value =
+        contribution.goalId;
+
+    updateEditDaysPreview();
 
     editModal.classList.remove(
         "hidden"
@@ -341,10 +509,24 @@ function updateCurrentContribution() {
             editAmount.value
         );
 
+    const goalId =
+        Number(
+            editGoalSelect.value
+        );
+
     if (amount <= 0) {
 
         alert(
             "Monto inválido"
+        );
+
+        return;
+    }
+
+    if (!getGoalById(goalId)) {
+
+        alert(
+            "Selecciona una meta"
         );
 
         return;
@@ -356,7 +538,7 @@ function updateCurrentContribution() {
 
         amount,
 
-        editComment.value.trim()
+        goalId
 
     );
 
@@ -365,10 +547,10 @@ function updateCurrentContribution() {
     renderContributions();
 
     if (
-        typeof loadDashboard ===
+        typeof refreshAfterContributionChange ===
         "function"
     ) {
-        loadDashboard();
+        refreshAfterContributionChange();
     }
 
 }
